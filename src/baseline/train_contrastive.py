@@ -1,7 +1,7 @@
 # train_contrastive.py
 # ------------------------------------------------------------
 # Contrastive fine-tuning for trial -> publication linking.
-#
+# 我们以人工标注的 (nct_id, pubmed_id, label=1) 作为正样本，并为每个正样本从人工标注的负例(若有）以及同一 trial 的 BM25 高排名候选中挖掘 hard / random 负例，从而构造出(trial, pos doc, neg doc)的对比学习训练对。
 # What this script can do:
 #   (A) Data preparation (optional, run once or when you change mining strategy)
 #       Step1: load + text concat + split by nct_id (ONLY trials with positives)
