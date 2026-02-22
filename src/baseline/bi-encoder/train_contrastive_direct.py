@@ -26,6 +26,8 @@ import os
 import json
 import random
 import argparse
+import time
+from threading import Thread
 
 import pandas as pd
 import torch
@@ -112,6 +114,82 @@ def build_binary_evaluator(df_valid: pd.DataFrame, name: str = "valid"):
         )
 
 
+
+class MetricsMonitor:
+    """Monitor evaluator CSV and plot metrics in real-time."""
+    
+    def __init__(self, save_dir: str):
+        self.save_dir = save_dir
+        self.last_plot_time = 0
+        self.csv_path = os.path.join(save_dir, "eval_results_valid-results.csv")
+        self.plot_path = os.path.join(save_dir, "metrics_plot.png")
+        self.running = False
+    
+    def start_monitoring(self):
+        """Start background thread to monitor CSV and update plots."""
+        self.running = True
+        thread = Thread(target=self._monitor_loop, daemon=True)
+        thread.start()
+    
+    def stop_monitoring(self):
+        """Stop monitoring thread."""
+        self.running = False
+    
+    def _monitor_loop(self):
+        """Background loop: check CSV every 2 seconds and update plot."""
+        while self.running:
+            time.sleep(2)
+            if os.path.exists(self.csv_path):
+                try:
+                    df = pd.read_csv(self.csv_path)
+                    if len(df) > 0:
+                        self._plot(df)
+                except Exception as e:
+                    pass  # Silently skip errors (file might be being written)
+    
+    def _plot(self, df):
+        """Generate plot from evaluator CSV."""
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            return
+        
+        # Only plot every 5 seconds to avoid constant redraws
+        now = time.time()
+        if now - self.last_plot_time < 5:
+            return
+        self.last_plot_time = now
+        
+        # Select numeric columns to plot
+        numeric_cols = df.select_dtypes(include=['float64', 'float32', 'int64']).columns
+        numeric_cols = [c for c in numeric_cols if c not in ['epoch', 'steps']]
+        
+        if len(numeric_cols) == 0:
+            return
+        
+        num_metrics = len(numeric_cols)
+        fig, axes = plt.subplots(num_metrics, 1, figsize=(10, 3 * num_metrics))
+        
+        if num_metrics == 1:
+            axes = [axes]
+        
+        for ax, col in zip(axes, numeric_cols):
+            ax.plot(df.index, df[col], marker='o', linewidth=2, markersize=6, color='steelblue')
+            ax.set_title(f"{col}", fontsize=12, fontweight='bold')
+            ax.set_xlabel("Evaluation step")
+            ax.set_ylabel(col)
+            ax.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        plt.savefig(self.plot_path, dpi=100, bbox_inches='tight')
+        plt.close()
+
+
+
+
+
+
+
 def train(args):
     #force_cpu()
 
@@ -156,9 +234,16 @@ def train(args):
 
     # Evaluator on valid set (optional but recommended)
     evaluator = None
+    monitor = None
     if args.do_valid_eval:
         evaluator = build_binary_evaluator(valid_df, name="valid")
         print(">>> Valid evaluator: BinaryClassificationEvaluator enabled.")
+
+        os.makedirs(args.save_dir, exist_ok=True)
+        monitor = MetricsMonitor(args.save_dir)
+        monitor.start_monitoring()
+        print(f">>> Real-time metrics plot will be saved to: {args.save_dir}/metrics_plot.png")
+
 
     total_steps = len(train_loader) * args.epochs
     warmup_steps = int(args.warmup_ratio * total_steps)
@@ -216,6 +301,7 @@ def main():
     # Valid eval
     parser.add_argument("--do_valid_eval", action="store_true", help="Enable valid evaluation & save_best_model.")
     parser.add_argument("--evaluation_steps", type=int, default=1000, help="Evaluate every N steps (only if do_valid_eval).")
+
 
     # Control size (useful for quick debug)
     parser.add_argument("--max_train_pairs", type=int, default=None, help="Optionally subsample train pairs.")

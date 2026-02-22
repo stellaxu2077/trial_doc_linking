@@ -33,9 +33,15 @@ def build_text(df: pd.DataFrame, id_col: str):
     cols = [c for c in df.columns if c not in {id_col, "study_source"}]
     if not cols:
         raise ValueError(f"No text columns found besides {id_col}. Columns: {df.columns.tolist()}")
+    '''
     combined = df[cols[0]].astype(str)
     for col in cols[1:]:
         combined += " " + df[col].astype(str)
+    '''
+    combined = cols[0] + ": " + df[cols[0]].astype(str)
+    for col in cols[1:]:
+        combined += " | " + col + ": " + df[col].astype(str)
+
     return combined.fillna("")
 
 
