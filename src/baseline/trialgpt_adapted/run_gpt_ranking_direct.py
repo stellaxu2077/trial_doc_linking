@@ -14,10 +14,11 @@ import time
 
 from tqdm import tqdm
 
-from TrialGPT import trial_doc_matching
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from build_bm25_cache_from_test import build_text, build_query_map_from_test
-from evaluate_from_cache import recall_hit_at_k, compute_metrics
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
+from baseline.trialgpt_adapted.TrialGPT_ranking_direct import trial_doc_matching
+from baseline.build_bm25_cache_from_test import build_text, build_query_map_from_test
+from baseline.evaluate_from_cache import recall_hit_at_k, compute_metrics
 
 from collections import defaultdict
 
@@ -174,3 +175,7 @@ if __name__ == "__main__":
 	# 計算 metrics
 	metrics = compute_metrics(ranked_map, ground_truth_map)
 	print(metrics)
+
+
+
+

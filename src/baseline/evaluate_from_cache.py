@@ -81,7 +81,7 @@ def recall_hit_at_k(ranked_ids, gt_set, k):
 
 
 def compute_metrics(ranked_map, ground_truth_map):
-    ks = [1, 5, 10]
+    ks = [1, 5, 10, 50]
     hits = {k: 0 for k in ks}
     mrr_sum = 0.0
     total = 0
@@ -104,13 +104,14 @@ def compute_metrics(ranked_map, ground_truth_map):
         mrr_sum += rr
 
     if total == 0:
-        return {"total": 0, "r@1": 0.0, "r@5": 0.0, "r@10": 0.0, "mrr": 0.0}
+        return {"total": 0, "r@1": 0.0, "r@5": 0.0, "r@10": 0.0, "r@50": 0.0, "mrr": 0.0}
 
     return {
         "total": total,
         "r@1": hits[1] / total,
         "r@5": hits[5] / total,
         "r@10": hits[10] / total,
+        "r@50": hits[50] / total,
         "mrr": mrr_sum / total,
     }
 
@@ -218,11 +219,11 @@ def main():
     print("\n==================== RESULTS ====================")
     print(f"Evaluated queries: {results[0][1]['total'] if results else 0}")
     print("-------------------------------------------------")
-    print(f"{'Model':60s}  R@1     R@5     R@10    MRR")
+    print(f"{'Model':60s}  R@1     R@5     R@10    R@50    MRR")
     print("-------------------------------------------------")
     for model_path, m in results:
         name = (model_path[:57] + "...") if len(model_path) > 60 else model_path
-        print(f"{name:60s}  {m['r@1']:.4f}  {m['r@5']:.4f}  {m['r@10']:.4f}  {m['mrr']:.4f}")
+        print(f"{name:60s}  {m['r@1']:.4f}  {m['r@5']:.4f}  {m['r@10']:.4f}  {m['r@50']:.4f}  {m['mrr']:.4f}")
     print("=================================================\n")
 
 

@@ -5,7 +5,7 @@ TrialGPT-Ranking main functions.
 """
 
 import json
-from nltk.tokenize import sent_tokenize
+
 import time
 import os
 
